@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIRA Worklog Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .config-section {
+            padding: 30px;
+            background: #f8f9ff;
+            border-bottom: 1px solid #e1e5f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            padding: 30px;
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 20px rgba(255, 154, 158, 0.2);
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 JIRA Worklog Analyzer</h1>
+            <p>Visualize your productivity with beautiful insights</p>
+        </div>
+
+        <div class="config-section">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="your.email@company.com" value="pasindu.fernando@ideahub.lk">
+                </div>
+                <div class="form-group">
+                    <label for="token">API Token</label>
+                    <input type="password" id="token" placeholder="Enter your JIRA API token">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="domain">JIRA Domain</label>
+                <input type="url" id="domain" placeholder="https://yourcompany.atlassian.net" value="https://ideahubsupport.atlassian.net">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="days">Days to Analyze</label>
+                    <input type="number" id="days" min="1" max="365" value="31" placeholder="31">
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="fetchWorklogs()">
+                        📊 Analyze Worklogs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="results-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="totalHours">0</h3>
+                    <p>Total Hours</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalDays">0</h3>
+                    <p>Working Days</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="avgHours">0</h3>
+                    <p>Avg Hours/Day</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalIssues">0</h3>
+                    <p>Issues Worked</p>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="worklogChart"></canvas>
+            </div>
+
+            <div class="export-section" style="margin-bottom: 20px; text-align: center;">
+                <button class="btn" onclick="exportToCSV()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                    📄 Export to CSV
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="worklogTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Hours</th>
+                            <th>Issues</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let worklogChart = null;
+
+        async function fetchWorklogs() {
+            const email = document.getElementById('email').value;
+            const token = document.getElementById('token').value;
+            const domain = document.getElementById('domain').value;
+            const days = parseInt(document.getElementById('days').value);
+
+            if (!email || !token || !domain) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const btn = document.querySelector('.btn');
+            btn.disabled = true;
+            btn.innerHTML = '🔄 Analyzing...';
+
+            try {
+                // Simulate API call (replace with actual implementation)
+                const data = await simulateJiraAPI(email, token, domain, days);
+                displayResults(data);
+            } catch (error) {
+                showError('Failed to fetch worklog data: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📊 Analyze Worklogs';
+            }
+        }
+
+        async function simulateJiraAPI(email, token, domain, days) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Generate sample data
+            const data = [];
+            const today = new Date();
+            
+            for (let i = days; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                
+                // Skip weekends
+                if (date.getDay() === 0 || date.getDay() === 6) continue;
+                
+                // Random chance of having work
+                if (Math.random() > 0.3) {
+                    data.push({
+                        date: date.toISOString().split('T')[0],
+                        hours: Math.round((Math.random() * 6 + 2) * 100) / 100,
+                        issues: Math.floor(Math.random() * 5) + 1
+                    });
+                }
+            }
+
+            return data;
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results');
+            resultsSection.style.display = 'block';
+
+            // Store data globally for export
+            worklogData = data;
+
+            // Calculate statistics
+            const totalHours = data.reduce((sum, day) => sum + day.hours, 0);
+            const totalDays = data.length;
+            const avgHours = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : 0;
+            const totalIssues = data.reduce((sum, day) => sum + day.issues, 0);
+
+            // Update stats cards
+            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('totalDays').textContent = totalDays;
+            document.getElementById('avgHours').textContent = avgHours;
+            document.getElementById('totalIssues').textContent = totalIssues;
+
+            // Create chart
+            createChart(data);
+
+            // Update table
+            updateTable(data);
+
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('worklogChart').getContext('2d');
+            
+            if (worklogChart) {
+                worklogChart.destroy();
+            }
+
+            worklogChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Hours Worked',
+                        data: data.map(d => d.hours),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        hoverBackgroundColor: 'rgba(102, 126, 234, 1)',
+                        hoverBorderColor: '#4c51bf'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Daily Work Hours',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.querySelector('#worklogTable tbody');
+            tbody.innerHTML = '';
+
+            data.reverse().forEach(day => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${new Date(day.date).toLocaleDateString()}</td>
+                    <td>${day.hours.toFixed(1)}</td>
+                    <td>${day.issues}</td>
+                `;
+            });
+        }
+
+        function showError(message) {
+            const resultsSection = document.getElementById('results');
+            resultsSection.innerHTML = `<div class="error">${message}</div>`;
+            resultsSection.style.display = 'block';
+        }
+
+        // Initialize with some sample data on load
+        window.addEventListener('load', () => {
+            // You can remove this in production
+            setTimeout(() => {
+                const sampleData = [
+                    { date: '2025-01-29', hours: 7.5, issues: 3 },
+                    { date: '2025-01-28', hours: 6.2, issues: 2 },
+                    { date: '2025-01-27', hours: 8.1, issues: 4 },
+                    { date: '2025-01-26', hours: 5.8, issues: 2 },
+                    { date: '2025-01-25', hours: 7.3, issues: 3 }
+                ];
+                // displayResults(sampleData);
+            }, 1000);
+        });
+
+        // Store worklog data globally for export
+        let worklogData = [];
+
+        function exportToCSV() {
+            if (worklogData.length === 0) {
+                alert('No data to export. Please analyze worklogs first.');
+                return;
+            }
+
+            // Create CSV content
+            const csvContent = generateCSV(worklogData);
+            
+            // Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `jira_worklogs_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function generateCSV(data) {
+            // CSV headers
+            const headers = ['Date', 'Hours Worked', 'Issues Count'];
+            
+            // Convert data to CSV rows
+            const rows = data.map(item => [
+                new Date(item.date).toLocaleDateString(),
+                item.hours.toFixed(2),
+                item.issues
+            ]);
+
+            // Combine headers and rows
+            const csvArray = [headers, ...rows];
+            
+            // Convert to CSV string
+            return csvArray.map(row => 
+                row.map(field => `"${field}"`).join(',')
+            ).join('\n');
+        }
+    </script>
+</body>
+</html>
