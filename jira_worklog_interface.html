@@ -64,16 +64,17 @@
             color: #2d3748;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e2e8f0;
             border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s ease;
+            background: white;
         }
 
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
@@ -91,6 +92,8 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
 
         .btn:hover {
@@ -102,6 +105,14 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(113, 128, 150, 0.3);
         }
 
         .results-section {
@@ -163,9 +174,25 @@
             font-weight: 600;
         }
 
+        th:nth-child(1) { width: 120px; }
+        th:nth-child(2) { width: 120px; }
+        th:nth-child(3) { width: auto; min-width: 300px; }
+        th:nth-child(4) { width: 80px; text-align: center; }
+
         td {
             padding: 15px;
             border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        td:nth-child(4) { 
+            text-align: center; 
+            font-weight: 600;
+        }
+
+        td:nth-child(2) {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
         }
 
         tr:hover {
@@ -203,14 +230,96 @@
             border-left: 4px solid #e53e3e;
         }
 
+        .warning {
+            background: #fef5e7;
+            color: #c05621;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #ed8936;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .date-filter-section {
+            background: #e6fffa;
+            border: 2px solid #81e6d9;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .date-filter-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+
+        .date-filter-section h3::before {
+            content: '📅';
+            margin-right: 10px;
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .quick-filter-btn {
+            background: #4fd1c7;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-filter-btn:hover {
+            background: #38b2ac;
+            transform: translateY(-1px);
+        }
+
+        .quick-filter-btn.active {
+            background: #319795;
+            box-shadow: 0 4px 8px rgba(49, 151, 149, 0.3);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .date-range-info {
+            background: #e6fffa;
+            color: #2d3748;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            border-left: 4px solid #4fd1c7;
+            margin-top: 10px;
+        }
+
         @media (max-width: 768px) {
-            .form-row {
+            .form-row, .form-row-3 {
                 grid-template-columns: 1fr;
             }
             
@@ -221,6 +330,15 @@
             .container {
                 margin: 10px;
                 border-radius: 15px;
+            }
+
+            .quick-filters {
+                flex-direction: column;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>
@@ -233,6 +351,7 @@
         </div>
 
         <div class="config-section">
+            <!-- API Configuration -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="email">Email Address</label>
@@ -247,15 +366,73 @@
                 <label for="domain">JIRA Domain</label>
                 <input type="url" id="domain" placeholder="https://yourcompany.atlassian.net" value="https://ideahubsupport.atlassian.net">
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="days">Days to Analyze</label>
-                    <input type="number" id="days" min="1" max="365" value="31" placeholder="31">
+
+            <!-- Date Filter Section -->
+            <div class="date-filter-section">
+                <h3>Date Range Selection</h3>
+                
+                <!-- Quick Filter Buttons -->
+                <div class="quick-filters">
+                    <button class="quick-filter-btn" onclick="setQuickFilter('today')">Today</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('yesterday')">Yesterday</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('last7days')">Last 7 Days</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('last30days')" id="defaultFilter">Last 30 Days</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('thisMonth')">This Month</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('lastMonth')">Last Month</button>
+                    <button class="quick-filter-btn" onclick="setQuickFilter('thisYear')">This Year</button>
                 </div>
-                <div class="form-group">
-                    <label>&nbsp;</label>
+
+                <!-- Custom Date Range -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fromDate">From Date</label>
+                        <input type="date" id="fromDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="toDate">To Date</label>
+                        <input type="date" id="toDate">
+                    </div>
+                </div>
+
+                <!-- Month/Year Selection -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="monthSelect">Select Month</label>
+                        <select id="monthSelect" onchange="updateDateRangeFromMonth()">
+                            <option value="">-- Select Month --</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="yearSelect">Select Year</label>
+                        <select id="yearSelect" onchange="updateDateRangeFromMonth()">
+                            <!-- Years will be populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="date-range-info" id="dateRangeInfo">
+                    📅 Date range will be displayed here
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="filter-actions">
                     <button class="btn" onclick="fetchWorklogs()">
                         📊 Analyze Worklogs
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">
+                        🧹 Clear Filters
                     </button>
                 </div>
             </div>
@@ -296,8 +473,9 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Hours</th>
-                            <th>Issues</th>
+                            <th>Issue</th>
+                            <th>Summary</th>
+                            <th>Time (hours)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -308,25 +486,225 @@
 
     <script>
         let worklogChart = null;
+        let worklogData = [];
+        let currentFilter = '';
+
+        // Date cutoff - no data before July 1, 2025
+        const DATA_CUTOFF_DATE = new Date('2025-07-01');
+
+        // Initialize the application
+        window.addEventListener('load', () => {
+            initializeDateInputs();
+            setQuickFilter('last30days');
+        });
+
+        function initializeDateInputs() {
+            // Populate year dropdown
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            
+            for (let year = currentYear; year >= currentYear - 5; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+
+            // Set default dates (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('toDate').value = formatDateForInput(today);
+            document.getElementById('fromDate').value = formatDateForInput(thirtyDaysAgo);
+
+            updateDateRangeInfo();
+        }
+
+        function formatDateForInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function setQuickFilter(filterType) {
+            // Clear active states
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Set active state
+            event.target.classList.add('active');
+            currentFilter = filterType;
+
+            const today = new Date();
+            let fromDate, toDate;
+
+            switch (filterType) {
+                case 'today':
+                    fromDate = toDate = new Date(today);
+                    break;
+                case 'yesterday':
+                    fromDate = toDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 1);
+                    toDate.setDate(today.getDate() - 1);
+                    break;
+                case 'last7days':
+                    fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 7);
+                    toDate = new Date(today);
+                    break;
+                case 'last30days':
+                    fromDate = new Date(today);
+                    fromDate.setDate(today.getDate() - 30);
+                    toDate = new Date(today);
+                    break;
+                case 'thisMonth':
+                    fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    toDate = new Date(today);
+                    break;
+                case 'lastMonth':
+                    fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    toDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case 'thisYear':
+                    fromDate = new Date(today.getFullYear(), 0, 1);
+                    toDate = new Date(today);
+                    break;
+            }
+
+            document.getElementById('fromDate').value = formatDateForInput(fromDate);
+            document.getElementById('toDate').value = formatDateForInput(toDate);
+
+            // Clear month/year selection
+            document.getElementById('monthSelect').value = '';
+            document.getElementById('yearSelect').value = today.getFullYear();
+
+            updateDateRangeInfo();
+        }
+
+        function updateDateRangeFromMonth() {
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            
+            if (monthSelect.value !== '' && yearSelect.value !== '') {
+                const month = parseInt(monthSelect.value);
+                const year = parseInt(yearSelect.value);
+                
+                const fromDate = new Date(year, month, 1);
+                const toDate = new Date(year, month + 1, 0);
+                
+                document.getElementById('fromDate').value = formatDateForInput(fromDate);
+                document.getElementById('toDate').value = formatDateForInput(toDate);
+                
+                // Clear quick filter active states
+                document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                currentFilter = 'custom';
+                updateDateRangeInfo();
+            }
+        }
+
+        function updateDateRangeInfo() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const infoElement = document.getElementById('dateRangeInfo');
+            
+            if (fromDate && toDate) {
+                const from = new Date(fromDate);
+                const to = new Date(toDate);
+                const daysDiff = Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+                
+                // Check if range includes dates before cutoff
+                if (from < DATA_CUTOFF_DATE) {
+                    const cutoffStr = DATA_CUTOFF_DATE.toLocaleDateString();
+                    infoElement.innerHTML = `📅 Analyzing from ${from.toLocaleDateString()} to ${to.toLocaleDateString()} (${daysDiff} days)<br>
+                    <span style="color: #c05621; font-weight: bold;">⚠️ Note: No sample data will be generated for dates before ${cutoffStr}</span>`;
+                } else {
+                    infoElement.innerHTML = `📅 Analyzing from ${from.toLocaleDateString()} to ${to.toLocaleDateString()} (${daysDiff} days)`;
+                }
+            } else {
+                infoElement.innerHTML = '📅 Please select a date range';
+            }
+        }
+
+        function clearFilters() {
+            // Clear all form inputs
+            document.getElementById('monthSelect').value = '';
+            document.getElementById('yearSelect').value = new Date().getFullYear();
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            
+            // Clear active states
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Hide results
+            document.getElementById('results').style.display = 'none';
+            
+            // Clear data
+            worklogData = [];
+            currentFilter = '';
+            
+            // Update info
+            document.getElementById('dateRangeInfo').innerHTML = '📅 Date range cleared - please select new dates';
+            
+            // Destroy chart if exists
+            if (worklogChart) {
+                worklogChart.destroy();
+                worklogChart = null;
+            }
+        }
+
+        // Add event listeners for date inputs
+        document.getElementById('fromDate').addEventListener('change', () => {
+            // Clear quick filter states when manually changing dates
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            currentFilter = 'custom';
+            updateDateRangeInfo();
+        });
+
+        document.getElementById('toDate').addEventListener('change', () => {
+            // Clear quick filter states when manually changing dates
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            currentFilter = 'custom';
+            updateDateRangeInfo();
+        });
 
         async function fetchWorklogs() {
             const email = document.getElementById('email').value;
             const token = document.getElementById('token').value;
             const domain = document.getElementById('domain').value;
-            const days = parseInt(document.getElementById('days').value);
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
 
             if (!email || !token || !domain) {
                 alert('Please fill in all required fields');
                 return;
             }
 
-            const btn = document.querySelector('.btn');
+            if (!fromDate || !toDate) {
+                alert('Please select a date range');
+                return;
+            }
+
+            if (new Date(fromDate) > new Date(toDate)) {
+                alert('From date cannot be later than To date');
+                return;
+            }
+
+            const btn = document.querySelector('.filter-actions .btn');
             btn.disabled = true;
             btn.innerHTML = '🔄 Analyzing...';
 
             try {
-                // Simulate API call (replace with actual implementation)
-                const data = await simulateJiraAPI(email, token, domain, days);
+                const data = await simulateJiraAPI(email, token, domain, fromDate, toDate);
                 displayResults(data);
             } catch (error) {
                 showError('Failed to fetch worklog data: ' + error.message);
@@ -336,27 +714,77 @@
             }
         }
 
-        async function simulateJiraAPI(email, token, domain, days) {
+        async function simulateJiraAPI(email, token, domain, fromDate, toDate) {
             // Simulate API delay
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Generate sample data
+            // Sample issue pool
+            const sampleIssues = [
+                { key: 'DLAMC-20', summary: 'PROD (HDL-277) Customer MB status turning into inactive even after admin user making it to active' },
+                { key: 'DLAMC-8', summary: 'PROD (HDL-376) Unable to View receipts' },
+                { key: 'DLAMC-2', summary: 'PROD (HDL-222) IB: All Accounts Unable to View in IB' },
+                { key: 'DLAMC-18', summary: 'PROD (HDL-265) Two different status shown for CC in MB & IB' },
+                { key: 'DLAMC-43', summary: 'PROD (HDL-469) Loan creation report issue' },
+                { key: 'IHADMIN-17', summary: 'PM Status Meeting DL Bugs Discussions' },
+                { key: 'DLAMC-47', summary: 'PROD (HDL-478) System maintenance and optimization' },
+                { key: 'DLAMC-6', summary: 'PROD(HDL-360) Display Exchange rate 1346' },
+                { key: 'DLAMC-27', summary: 'PROD (HDL-464) Credit card outstanding balance shown as credit balance (IB)' },
+                { key: 'DLAMC-26', summary: 'PROD (HDL-462) Customers aren\'t able to view Inward and Outward cheque details' },
+                { key: 'DLAMC-19', summary: 'PROD (HDL-449) HNB General Bill Payment' },
+                { key: 'DLAMC-17', summary: 'PROD (HDL-450) Inability to reset user profiles in Digital Layer Admin' },
+                { key: 'IHADMIN-20', summary: 'HR | employee farewell related official time' },
+                { key: 'DLAMC-23', summary: 'PROD (HDL-331) "Display Name Max Length is 12" is displayed if admin user goes to do any action against a customer profile' }
+            ];
+
+            // Generate sample data for the date range
             const data = [];
-            const today = new Date();
+            const start = new Date(fromDate);
+            const end = new Date(toDate);
             
-            for (let i = days; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
+            for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                // Skip dates before the cutoff date (July 1, 2025)
+                if (date < DATA_CUTOFF_DATE) {
+                    continue;
+                }
                 
                 // Skip weekends
                 if (date.getDay() === 0 || date.getDay() === 6) continue;
                 
-                // Random chance of having work
-                if (Math.random() > 0.3) {
+                // Random chance of having work (80% chance)
+                if (Math.random() > 0.2) {
+                    // Generate 1-4 tasks per day
+                    const numTasks = Math.floor(Math.random() * 4) + 1;
+                    const tasks = [];
+                    const usedIssues = new Set();
+                    
+                    let totalHours = 0;
+                    for (let i = 0; i < numTasks; i++) {
+                        // Select a random issue that hasn't been used today
+                        let issue;
+                        let attempts = 0;
+                        do {
+                            issue = sampleIssues[Math.floor(Math.random() * sampleIssues.length)];
+                            attempts++;
+                        } while (usedIssues.has(issue.key) && attempts < 10);
+                        
+                        usedIssues.add(issue.key);
+                        
+                        // Generate hours for this task (1-4 hours)
+                        const taskHours = Math.round((Math.random() * 3 + 1) * 100) / 100;
+                        totalHours += taskHours;
+                        
+                        tasks.push({
+                            issueKey: issue.key,
+                            summary: issue.summary,
+                            hours: taskHours
+                        });
+                    }
+                    
                     data.push({
                         date: date.toISOString().split('T')[0],
-                        hours: Math.round((Math.random() * 6 + 2) * 100) / 100,
-                        issues: Math.floor(Math.random() * 5) + 1
+                        hours: Math.round(totalHours * 100) / 100,
+                        issues: numTasks,
+                        tasks: tasks
                     });
                 }
             }
@@ -371,6 +799,23 @@
             // Store data globally for export
             worklogData = data;
 
+            // Show warning if no data due to cutoff date
+            const fromDate = new Date(document.getElementById('fromDate').value);
+            const toDate = new Date(document.getElementById('toDate').value);
+            
+            let warningHtml = '';
+            if (data.length === 0 && toDate < DATA_CUTOFF_DATE) {
+                warningHtml = `<div class="warning">
+                    ⚠️ No data available: The selected date range is entirely before July 1, 2025. 
+                    Please select a date range that includes or starts from July 1, 2025 onwards.
+                </div>`;
+            } else if (fromDate < DATA_CUTOFF_DATE && data.length > 0) {
+                warningHtml = `<div class="warning">
+                    ⚠️ Partial data: Some dates in your selected range are before July 1, 2025. 
+                    Data is only shown for dates from July 1, 2025 onwards.
+                </div>`;
+            }
+
             // Calculate statistics
             const totalHours = data.reduce((sum, day) => sum + day.hours, 0);
             const totalDays = data.length;
@@ -383,11 +828,23 @@
             document.getElementById('avgHours').textContent = avgHours;
             document.getElementById('totalIssues').textContent = totalIssues;
 
-            // Create chart
-            createChart(data);
+            // Add warning if present
+            if (warningHtml) {
+                resultsSection.innerHTML = warningHtml + resultsSection.innerHTML;
+            }
 
-            // Update table
-            updateTable(data);
+            // Create chart
+            if (data.length > 0) {
+                createChart(data);
+                updateTable(data);
+            } else {
+                // Clear chart if no data
+                if (worklogChart) {
+                    worklogChart.destroy();
+                    worklogChart = null;
+                }
+                document.querySelector('#worklogTable tbody').innerHTML = '';
+            }
 
             // Scroll to results
             resultsSection.scrollIntoView({ behavior: 'smooth' });
@@ -464,12 +921,16 @@
             const tbody = document.querySelector('#worklogTable tbody');
             tbody.innerHTML = '';
 
-            data.reverse().forEach(day => {
+            // Sort data by date (newest first)
+            const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedData.forEach(day => {
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td>${new Date(day.date).toLocaleDateString()}</td>
-                    <td>${day.hours.toFixed(1)}</td>
-                    <td>${day.issues}</td>
+                    <td style="font-family: 'Courier New', monospace; font-size: 13px; word-break: break-all;">${day.issues}</td>
+                    <td style="max-width: 500px; word-wrap: break-word; line-height: 1.4;">${day.summary}</td>
+                    <td style="text-align: center; font-weight: 600;">${day.hours}</td>
                 `;
             });
         }
@@ -479,24 +940,6 @@
             resultsSection.innerHTML = `<div class="error">${message}</div>`;
             resultsSection.style.display = 'block';
         }
-
-        // Initialize with some sample data on load
-        window.addEventListener('load', () => {
-            // You can remove this in production
-            setTimeout(() => {
-                const sampleData = [
-                    { date: '2025-01-29', hours: 7.5, issues: 3 },
-                    { date: '2025-01-28', hours: 6.2, issues: 2 },
-                    { date: '2025-01-27', hours: 8.1, issues: 4 },
-                    { date: '2025-01-26', hours: 5.8, issues: 2 },
-                    { date: '2025-01-25', hours: 7.3, issues: 3 }
-                ];
-                // displayResults(sampleData);
-            }, 1000);
-        });
-
-        // Store worklog data globally for export
-        let worklogData = [];
 
         function exportToCSV() {
             if (worklogData.length === 0) {
@@ -512,8 +955,12 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const filename = `jira_worklogs_${fromDate}_to_${toDate}.csv`;
+            
             link.setAttribute('href', url);
-            link.setAttribute('download', `jira_worklogs_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
             
             document.body.appendChild(link);
@@ -523,14 +970,32 @@
 
         function generateCSV(data) {
             // CSV headers
-            const headers = ['Date', 'Hours Worked', 'Issues Count'];
+            const headers = ['Date', 'Issue Key', 'Summary', 'Hours'];
             
-            // Convert data to CSV rows
-            const rows = data.map(item => [
-                new Date(item.date).toLocaleDateString(),
-                item.hours.toFixed(2),
-                item.issues
-            ]);
+            // Convert data to CSV rows - flatten tasks
+            const rows = [];
+            data.forEach(day => {
+                if (day.tasks && day.tasks.length > 0) {
+                    day.tasks.forEach(task => {
+                        rows.push([
+                            new Date(day.date).toLocaleDateString(),
+                            task.issueKey,
+                            task.summary.replace(/"/g, '""'), // Escape quotes in summary
+                            task.hours.toFixed(2)
+                        ]);
+                    });
+                    
+                    // Add daily total row if multiple tasks
+                    if (day.tasks.length > 1) {
+                        rows.push([
+                            '',
+                            'DAILY TOTAL',
+                            `Total for ${new Date(day.date).toLocaleDateString()}`,
+                            day.hours.toFixed(2)
+                        ]);
+                    }
+                }
+            });
 
             // Combine headers and rows
             const csvArray = [headers, ...rows];
